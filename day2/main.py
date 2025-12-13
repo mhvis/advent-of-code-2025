@@ -1,7 +1,11 @@
 def main():
+    part2_self_test()
     print("Part 1")
     print(f"Example: {part1(parse_file('example.txt'))}")
     print(f"Input: {part1(parse_file('input.txt'))}")
+    print("Part 2")
+    print(f"Example: {part2_naive(parse_file('example.txt'))}")
+    print(f"Input: {part2_naive(parse_file('input.txt'))}")
 
 
 def part1(ranges: list[tuple[int, int]]) -> int:
@@ -36,6 +40,41 @@ def get_first_half(i: int) -> int:
 def duplicate_digits(i: int) -> int:
     """Given a number 'n' returns 'nn'."""
     return int(str(i) + str(i))
+
+
+def part2_naive(ranges: list[tuple[int, int]]) -> int:
+    """Naive implementation with linear time complexity on the length of each range."""
+    invalid_id_sum = 0
+    for start, end in ranges:
+        for i in range(start, end + 1):
+            if part2_is_invalid(i):
+                invalid_id_sum += i
+    return invalid_id_sum
+
+
+def part2_is_invalid(i: int) -> bool:
+    digits = str(i)
+    if len(digits) == 1:
+        return False
+    for repeat_length in range(1, (len(digits) // 2) + 1):
+        if digits[0:repeat_length] * (len(digits) // repeat_length) == digits:
+            return True
+    return False
+
+
+def part2_self_test():
+    if part2_is_invalid(1):
+        raise ValueError
+    if part2_is_invalid(10):
+        raise ValueError
+    if not part2_is_invalid(11):
+        raise ValueError
+    if not part2_is_invalid(123123123):
+        raise ValueError
+    if part2_is_invalid(1231231231):
+        raise ValueError
+    if part2_is_invalid(123123124):
+        raise ValueError
 
 
 def parse_file(filename: str) -> list[tuple[int, int]]:
