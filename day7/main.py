@@ -2,62 +2,77 @@ import sys
 
 
 def main():
-    print("Part 1")
-    print(part1(sys.argv[1]))
-
-
-def part1(filename: str) -> int:
+    filename = sys.argv[1]
     with open(filename) as f:
-        return solve_lines_part1(f.readlines())
+        print(solve(f.readlines()))
 
 
-def solve_lines_part1(lines: list[str]) -> int:
-    beams = None  # type: list[bool]|None
+def solve(lines: list[str]) -> tuple[int, int]:
+    """
+    Solves part 1 and 2 given a list of lines.
+
+    Returns:
+        A tuple with (number of splits (part 1), number of timelines (part 2)).
+    """
+    initial_state, splitter_rows = parse_input(lines)
+
+    beam_state = [1 if s else 0 for s in initial_state]
     split_count = 0
+
+    for splitters in splitter_rows:
+        split_count += split(beam_state, splitters)
+
+    return split_count, sum(beam_state)
+
+
+def parse_input(lines: list[str]) -> tuple[list[bool], list[list[bool]]]:
+    """Returns a tuple with the initial state, and rows of splitters."""
+    initial_state = None  # type: list[bool]|None
+    splitter_rows = []  # type: list[list[bool]]
 
     for line in lines:
         line = line.strip()
         if line == "":
             continue
 
-        if beams is None:
-            beams = get_starters(line)
+        if initial_state is None:
+            initial_state = [True if c == "S" else False for c in line]
         else:
-            to_split = get_splits(beams, get_splitters(line))
-            split_count += sum(to_split)
-            split(beams, to_split)
+            splitter_rows.append([True if c == "^" else False for c in line])
+
+    return initial_state, splitter_rows
+
+
+def split(beam_state: list[int], splitters: list[bool]) -> int:
+    """
+    Splits all beams, given a list of splitters.
+
+    The current beam state is modified in-place!
+
+    Args:
+        beam_state: The current beam state. If the value is 0, there is no beam at that spot. Else,
+            the integer denotes the number of overlapping beams (timelines).
+        splitters: When True, there is a splitter at that spot.
+
+    Returns:
+        The number of splits performed.
+    """
+    split_count = 0
+    for i in range(len(beam_state)):
+        if splitters[i]:
+            # Track the number of splits
+            if beam_state[i] > 0:
+                split_count += 1
+
+            # Add beams to the left and right, and copy the number of timelines
+            if i - 1 >= 0:
+                beam_state[i - 1] += beam_state[i]
+            if i + 1 < len(beam_state):
+                beam_state[i + 1] += beam_state[i]
+            # Remove the original beam
+            beam_state[i] = 0
 
     return split_count
-
-
-def get_splitters(line: str) -> list[bool]:
-    """Returns all splitters in an input line."""
-    return [True if c == "^" else False for c in line]
-
-
-def get_starters(line: str) -> list[bool]:
-    return [True if c == "S" else False for c in line]
-
-
-def merge_beams(a: list[bool], b: list[bool]) -> list[bool]:
-    """Merges two beam lists into one beam list."""
-    return [a or b for a, b in zip(a, b)]
-
-
-def get_splits(beams: list[bool], splitters: list[bool]) -> list[bool]:
-    """Returns the splits that need to be performed based on the current beams."""
-    return [a and b for a, b in zip(beams, splitters)]
-
-
-def split(beams: list[bool], to_split: list[bool]) -> None:
-    """Splits all beams in-place, by adding two new beams left and right and removing the original beam."""
-    for i in range(len(beams)):
-        if to_split[i]:
-            beams[i] = False
-            if i - 1 >= 0:
-                beams[i - 1] = True
-            if i + 1 < len(beams):
-                beams[i + 1] = True
 
 
 if __name__ == "__main__":
