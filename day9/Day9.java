@@ -8,13 +8,8 @@ import java.util.Scanner;
  * We make the assumption that each line segment has at least length 3. Otherwise,
  * it is possible to 'turn around' by going left twice, without leaving a gap in
  * between.
- * <p>
- * With the above assumption, for part 2, we can simply check if another point (red
- * tile) is strictly inside the rectangle. In that case, the rectangle is invalid,
- * because at least one of the eight surrounding squares of that inner point will
- * be empty.
  */
-public class Day9Part2 {
+public class Day9 {
     public static void main(String[] args) {
         // Input parsing
         ArrayList<Point> points = new ArrayList<>();
@@ -35,15 +30,10 @@ public class Day9Part2 {
                 // Part 1
                 maxPart1 = Math.max(maxPart1, area);
 
-                if (area ==2) {
-                    throw new RuntimeException("Assumption failed :(, see Javadoc");
-                }
-
-                // Part 2 (see Javadoc)
+                // Part 2
                 boolean valid = true;
                 for (int k = 0; k < points.size(); k++) {
-                    if (r.strictlyInside(points.get(k))) {
-//                    if (r.lineSegmentIntersects(points.get(k), points.get((k + 1) % points.size()))) {
+                    if (r.lineSegmentIntersects(points.get(k), points.get((k + 1) % points.size()))) {
                         valid = false;
                         break;
                     }
@@ -71,10 +61,6 @@ public class Day9Part2 {
             return (long) (Math.abs(a.x - b.x) + 1) * (Math.abs(a.y - b.y) + 1);
         }
 
-        public boolean strictlyInside(Point p) {
-            return this.minX() < p.x && p.x < this.maxX() && this.minY() < p.y && p.y < this.maxY();
-        }
-
         /**
          * Returns true when the line *segment* is partly or fully inside the rectangle.
          */
@@ -84,17 +70,17 @@ public class Day9Part2 {
                 int x = segA.x;
                 int minY = Math.min(segA.y, segB.y);
                 int maxY = Math.max(segA.y, segB.y);
-                // The vertical line should be between the vertical sides of the rectangle
                 return (this.minX() < x && x < this.maxX())
-                        // At least one of the rectangle horizontal sides needs to cross the line segment
-                        && ((minY < a.y && a.y < maxY) || (minY < b.y && b.y < maxY));
+                        && maxY > this.minY()
+                        && minY < this.maxY();
             } else if (segA.y == segB.y) {
                 // Same as above but with x/y flipped
-                int y =  segA.y;
+                int y = segA.y;
                 int minX = Math.min(segA.x, segB.x);
                 int maxX = Math.max(segA.x, segB.x);
                 return (this.minY() < y && y < this.maxY())
-                        && ((minX < a.x && a.x < maxX) || (minX < b.x && b.x < maxX));
+                        && maxX > this.minX()
+                        && minX < this.maxX();
             }
             throw new IllegalArgumentException("Line is not vertical or horizontal");
         }
