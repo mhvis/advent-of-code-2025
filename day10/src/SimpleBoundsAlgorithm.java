@@ -13,50 +13,55 @@ public class SimpleBoundsAlgorithm implements BoundsAlgorithm {
             for (int j = 0; j < M.cols(); j++) {
                 // The element must be non-zero, because we cannot divide by zero
                 if (M.get(i, j) != 0) {
-                    // Make sure that we can safely divide, when moving terms from one side of the equation to the other
-                    M.scale(i, scalingFactor(M.getY(i), M.get(i, j)));
-                    int newUpper = safeDiv(M.getY(i), M.get(i, j));
-                    int newLower = newUpper;
+                    // Using a long here to prevent overflows
+                    long newUpper = M.getY(i);
+                    long newLower = newUpper;
 
                     for (int k = 0; k < M.cols(); k++) {
                         if (k != j) {
-                            // Make sure that we can safely divide
-                            M.scale(i, scalingFactor(M.get(i, k), M.get(i, j)));
                             // Bring the element to the other side of the equation
-                            int x = -1 * safeDiv(M.get(i, k), M.get(i, j));
+                            long x = -M.get(i, k);
 
-                            // When we are maximizing a coefficient:
-                            //
-                            // - If another element (x) on the other side is negative, we use the lower bound of
-                            // the coefficient of that element, to 'help' the maximized coefficient in the least way possible.
-                            // - Vice versa when another variable is positive.
-                            //
-                            // When we are minimizing a coefficient, this is the other way around.
+                            // We pick the lower or upper bound based on whether we should maximize or minimize
+                            // the current coefficient.
 
-                            newUpper = addBounded(newUpper, x * ((x < 0) ? lower[k] : upper[k]));
-                            newLower = addBounded(newLower, x * ((x < 0) ? upper[k] : lower[k]));
+                            boolean inverse = (x < 0) ^ (M.get(i, j) < 0);
+
+                            newUpper += x * (inverse ? lower[k] : upper[k]);
+                            newLower += x * (inverse ? upper[k] : lower[k]);
                         }
                     }
 
+                    // !!!!!!
+                    // This is a very ugly integer division where we throw away a sometimes non-zero
+                    // remainder. Somehow it seems to work but this is going to cause issues.
+                    newUpper /= M.get(i, j);
+                    newLower /= M.get(i, j);
+
+                    // Better:
+                    // newUpper = Util.safeDiv(newUpper, M.get(i, j));
+                    // newLower = Util.safeDiv(newLower, M.get(i, j));
+
                     // Diagnostics
                     if (newUpper < upper[j]) {
-                        LOGGER.finer("New upper bound found for coefficient " + j + " using row " + i + ": " + newUpper);
+                        LOGGER.finest("New upper bound found for coefficient " + j + " using row " + i + ": " + newUpper + "\nLower: " + Arrays.toString(lower) + "\nUpper: " + Arrays.toString(upper));
                     }
                     if (newLower > lower[j]) {
-                        LOGGER.finer("New lower bound found for coefficient " + j + " using row " + i + ": " + newLower);
+                        LOGGER.finest("New lower bound found for coefficient " + j + " using row " + i + ": " + newLower + "\nLower: " + Arrays.toString(lower) + "\nUpper: " + Arrays.toString(upper));
                     }
 
                     // Check if a bound is more restricted
                     if (newUpper < upper[j] || newLower > lower[j]) {
-                        upper[j] = Math.min(upper[j], newUpper);
-                        lower[j] = Math.max(lower[j], newLower);
+                        upper[j] = Math.toIntExact(Math.min(upper[j], newUpper));
+                        lower[j] = Math.toIntExact(Math.max(lower[j], newLower));
 
                         if (upper[j] < lower[j]) {
-                            return false;  // Contradiction
+                            LOGGER.finest("Contradiction");
+                            return false;
                         }
 
                         // Start over because the new bounds may affect the earlier bounds
-                        i = 0;
+                        i = -1;  // We have to use -1 because the for loop does ++
                         break;
                     }
                 }
@@ -64,38 +69,5 @@ public class SimpleBoundsAlgorithm implements BoundsAlgorithm {
         }
         LOGGER.finer("Newly computed bounds: " + Arrays.toString(lower) + ", " + Arrays.toString(upper));
         return true;
-    }
-
-    /**
-     * Returns Integer.MAX_VALUE or Integer.MIN_VALUE when the result would overflow.
-     */
-    private int addBounded(int a, int b) {
-        try {
-            return Math.addExact(a, b);
-        } catch (ArithmeticException e) {
-            return (b >= 0) ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-        }
-    }
-
-    /**
-     * Throws an exception if we cannot divide without remainder.
-     */
-    private int safeDiv(int a, int b) {
-        if (a % b != 0) {
-            throw new ArithmeticException(a + " is not a multiple of " + b);
-        }
-        return a / b;
-    }
-
-    /**
-     * Determines a scaling factor that we can use to make two numbers in the same row of a matrix divisible.
-     */
-    private int scalingFactor(int a, int b) {
-        int f = 1;
-        LOGGER.finest("scalingFactor(" + a + ", " + b + ")");
-        while ((f * a) % (f * b) != 0) {
-            f++;
-        }
-        return f;
     }
 }

@@ -44,27 +44,69 @@ public class Main {
         // Find pivots and free variables
         boolean[] free = frees(M);
 
-        // Guess
-
         // Prepare lower and upper bounds of all coefficients, initially set to 0 and Infinity respectively
         int[] lower = new int[M.cols()];
         int[] upper = new int[M.cols()];
         Arrays.fill(upper, Integer.MAX_VALUE);
 
-        new SimpleBoundsAlgorithm().execute(M, lower, upper);
+        return minimizeDfs(M, lower, upper, free, new SimpleBoundsAlgorithm());
+    }
 
-        return 0;
+    private static int minimizeDfs(Matrix M, int[] lower, int[] upper, boolean[] free, BoundsAlgorithm boundsAlgo) {
+        // Update lower and upper bounds
+        lower = lower.clone();
+        upper = upper.clone();
+
+        if (!boundsAlgo.execute(M, lower, upper)) {
+            // Contradiction, return infinity
+            return Integer.MAX_VALUE;
+        }
+
+        // Base case: return the sum (total number of button presses) when there are no unknown coefficients left
+        if (Arrays.equals(lower, upper)) {
+            return Arrays.stream(lower).sum();
+        }
+
+        // Find an unknown free coefficient with the smallest [lower, upper] range
+        int c = -1;
+        for (int i = 0; i < M.cols(); i++) {
+            if (free[i] && lower[i] != upper[i]) {
+                if (c == -1 || upper[i] - lower[i] < upper[c] - lower[c]) {
+                    c = i;
+                }
+            }
+        }
+
+        // Guess all values for the chosen coefficient, and pick the minimal result
+        int lowerC = lower[c];
+        int upperC = upper[c];
+        if (upperC - lowerC > 100000) {
+            throw new RuntimeException("Numbers are too large, something is wrong");
+        }
+        int min = Integer.MAX_VALUE;
+        for (int v = lowerC; v <= upperC; v++) {
+            lower[c] = v;
+            upper[c] = v;
+            int res = minimizeDfs(M, lower, upper, free, boundsAlgo);
+            LOGGER.finer("minimizeDfs: c=" + c + " v=" + v + " res=" + res);
+            min = Math.min(min, res);
+        }
+
+        return min;
     }
 
     /**
      * Finds pivots and free variables in a matrix in row reduced echelon form.
+     *
+     * <p>We don't require the pivots to be '1'.</p>
      */
     private static boolean[] frees(Matrix M) {
         boolean[] free = new boolean[M.cols()];
         int pivR = 0;
         for (int i = 0; i < M.cols(); i++) {
             for (int j = 0; j < M.rows(); j++) {
-                if (M.get(j, i) != ((pivR == j) ? 1 : 0)) {
+                int v = M.get(j, i);
+                if ((j == pivR && v == 0) || (j != pivR && v != 0)) {
                     free[i] = true;
                     break;
                 }
@@ -76,5 +118,4 @@ public class Main {
         LOGGER.finer("Free variables: " + Arrays.toString(free));
         return free;
     }
-
 }

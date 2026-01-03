@@ -42,7 +42,7 @@ public class Matrix {
         for (int i = 0; i < cols(); i++) {
             M[row][i] += scalar * M[otherRow][i];
         }
-        y[row] += scalar *  y[otherRow];
+        y[row] += scalar * y[otherRow];
 
         if (scalar != 0) {
             LOGGER.finer("Added " + scalar + " times row " + otherRow + " to row " + row);
@@ -61,6 +61,7 @@ public class Matrix {
             LOGGER.finest("\n" + this);
         }
     }
+
     /**
      * Integer division.
      *
@@ -69,9 +70,9 @@ public class Matrix {
      */
     public void divide(int row, int scalar) {
         for (int i = 0; i < cols(); i++) {
-            M[row][i] /= scalar;
+            M[row][i] = Util.safeDiv(M[row][i], scalar);
         }
-        y[row] /= scalar;
+        y[row] = Util.safeDiv(y[row], scalar);
 
         if (scalar != 1) {
             LOGGER.finer("Divided row " + row + " by " + scalar);

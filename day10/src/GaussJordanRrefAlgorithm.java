@@ -24,13 +24,21 @@ public class GaussJordanRrefAlgorithm implements RrefAlgorithm {
 
             M.swap(j, r);
 
-            // Make sure that the pivot is one by dividing by itself
-            M.divide(r, M.get(r, i));
+            // // Make sure that the pivot is one by dividing by itself
+            // M.divide(r, M.get(r, i));
 
-            // Make every other non-zero value in the same column zero, by adding x times the current row
+            // Cancel out every other non-zero value in the same column
             for (int k = 0; k < M.rows(); k++) {
                 if (k != r) {
-                    M.add(k, r, -1 * M.get(k, i) / M.get(r, i));
+                    // Make both values divisible by scaling both rows using the least common multiple
+                    int num = M.get(k, i);
+                    if (num != 0) {
+                        int denom = M.get(r, i);
+                        M.scale(k, Util.lcm(num, denom) / Math.abs(num));
+                        M.scale(r, Util.lcm(num, denom) / Math.abs(denom));
+                    }
+
+                    M.add(k, r, -1 * Util.safeDiv(M.get(k, i), M.get(r, i)));
                 }
             }
             r++;
