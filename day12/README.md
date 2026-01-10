@@ -1,5 +1,9 @@
 
-## Notes
+## Notes for the recursive backtracking solver
+
+The problem is NP-complete and the recursive backtracking solver (RecursiveBacktrackingPart1Solver)
+is too slow. The CountingPart1Solver does work on the large input.
+
 
 ### Lemma 1
 If there is a solution, there will always be a solution where
@@ -22,9 +26,3 @@ Proof: trivial.
 ### Assumptions
 
 * A present is always 3x3 and always requires at least a 3x3 space to fit.
-
-
-### Time complexity
-
-Above lemmas lead to a solution with time complexity $O(n*m)$ where $n$ is the number of present *types/shapes* and $m$ is the total number of presents.
-There is a big constant factor left out.

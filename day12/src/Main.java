@@ -24,11 +24,11 @@ public class Main {
         BasePresent[] presents = presentList.toArray(new BasePresent[0]);
         int total = 0;
         for (Problem problem : problems) {
-            if (new RecursiveBacktrackingPart1Solver(presents, problem, logger).solve()) {
+            // if (new RecursiveBacktrackingPart1Solver(presents, problem, logger).solve()) {
+            if (new CountingPart1Solver(problem, presents).solve()) {
                 total += 1;
             }
         }
-        System.out.println();
         System.out.println(total);
     }
 }
